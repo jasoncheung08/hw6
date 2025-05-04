@@ -277,6 +277,7 @@ private:
 
     // ADD MORE DATA MEMBERS HERE, AS NECESSARY
     size_t numItems_;
+    size_t numOccupied_;
     double resizeAlpha_;
 
 };
@@ -299,7 +300,7 @@ template<typename K, typename V, typename Prober, typename Hash, typename KEqual
 HashTable<K,V,Prober,Hash,KEqual>::HashTable(
     double resizeAlpha, const Prober& prober, const Hasher& hash, const KEqual& kequal)
        :  hash_(hash), kequal_(kequal), prober_(prober), totalProbes_(0),
-       mIndex_(0), numItems_(0), resizeAlpha_(resizeAlpha)
+       mIndex_(0), numItems_(0), numOccupied_(0), resizeAlpha_(resizeAlpha)
 {
     // Initialize any other data members as necessary
     table_.resize(CAPACITIES[mIndex_], nullptr);
@@ -333,7 +334,7 @@ template<typename K, typename V, typename Prober, typename Hash, typename KEqual
 void HashTable<K,V,Prober,Hash,KEqual>::insert(const ItemType& p)
 {
 
-    if ((double)(numItems_ + 1) / CAPACITIES[mIndex_] >= resizeAlpha_) {
+    if ((double)(numOccupied_ + 1) / CAPACITIES[mIndex_] >= resizeAlpha_) {
         resize();
     }
 
@@ -345,6 +346,7 @@ void HashTable<K,V,Prober,Hash,KEqual>::insert(const ItemType& p)
     if (table_[idx] == nullptr) {
         table_[idx] = new HashItem(p);
         numItems_++;
+        numOccupied_++;
     }
     else if (table_[idx]->deleted) {
         delete table_[idx];
@@ -448,6 +450,7 @@ void HashTable<K,V,Prober,Hash,KEqual>::resize()
     table_.clear();
     table_.resize(CAPACITIES[mIndex_], nullptr);
     numItems_ = 0;
+    numOccupied_ = 0;
 
     for (auto item : oldTable) {
         if (item != nullptr && !item->deleted) {
