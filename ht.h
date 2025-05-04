@@ -352,6 +352,7 @@ void HashTable<K,V,Prober,Hash,KEqual>::insert(const ItemType& p)
         table_[idx]->deleted = false;
         table_[idx]->item = p;
         numItems_++;
+        numOccupied_++;
     }
     else {
         table_[idx]->item.second = p.second;
@@ -469,21 +470,29 @@ HASH_INDEX_T HashTable<K,V,Prober,Hash,KEqual>::probe(const KeyType& key) const
 
     HASH_INDEX_T loc = prober_.next(); 
     totalProbes_++;
+
+    HASH_INDEX_T deletedSlot = npos;
+
     while(Prober::npos != loc)
     {
-        if(nullptr == table_[loc] ) {
-            return loc;
+        if(table_[loc] == nullptr) {
+            return (deletedSlot != npos) ? deletedSlot : loc;
+        }
+        else if (table_[loc]->deleted) {
+          if(deletedSlot == npos) {
+            deletedSlot = loc;
+          }
         }
         // fill in the condition for this else if statement which should 
         // return 'loc' if the given key exists at this location
-        else if(!table_[loc]->deleted && kequal_(table_[loc]->item.first, key)) {
+        else if(kequal_(table_[loc]->item.first, key)) {
             return loc;
         }
         loc = prober_.next();
         totalProbes_++;
     }
 
-    return npos;
+    return deletedSlot != npos ? deletedSlot : npos;
 }
 
 // Complete
