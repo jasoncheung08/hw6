@@ -349,10 +349,9 @@ void HashTable<K,V,Prober,Hash,KEqual>::insert(const ItemType& p)
         numOccupied_++;
     }
     else if (table_[idx]->deleted) {
-        delete table_[idx];
-        table_[idx] = new HashItem(p);
+        table_[idx]->deleted = false;
+        table_[idx]->item = p;
         numItems_++;
-        numOccupied_++;
     }
     else {
         table_[idx]->item.second = p.second;
