@@ -336,21 +336,40 @@ void HashTable<K,V,Prober,Hash,KEqual>::insert(const ItemType& p)
     resize();
   }
 
-  HASH_INDEX_T index = probe(p.first);
-  if (index == npos) {
-    throw std::logic_error("No avaliable slot");
+  HASH_INDEX_T h = hash_(p.first) % CAPACITIES[mIndex_];
+  prober_.init(h, CAPACITIES[mIndex_], p.first);
+
+  HASH_INDEX_T firstDeleted = npos;
+  HASH_INDEX_T loc = prober_.next();
+  totalProbes_++;
+
+  while (loc != npos) {
+    if (table_[loc] == nullptr) {
+      if (firstDeleted != npos) {
+        loc = firstDeleted;
+      }
+      table_[loc] = new HashItem(p);
+      return;
+    }
+    else if (!table_[loc]->deleted && kequal_(table_[loc]->item.first, p.first))  {
+      table_[loc]->item.second = p.second;
+      return;
+    }
+    else if (table_[loc]->deleted && firstDeleted == npos) {
+      firstDeleted = loc;
+    }
+
+    loc = prober_.next();
+    totalProbes_++;
   }
 
-  if (table_[index] == nullptr) {
-    table_[index] = new HashItem(p);
+  if (firstDeleted != npos) {
+    delete table_[firstDeleted];
+    table_[firstDeleted] = new HashItem(p);
+    return;
   }
-  else if (!table_[index]->deleted && kequal_(table_[index]->item.first, p.first)) {
-    table_[index]->item.second = p.second;
-  }
-  else if (table_[index]->deleted) {
-    delete table_[index];
-    table_[index] = new HashItem(p);
-  }
+
+  throw std::logic_error("No avaliable slot");
 }
 
 // To be completed
